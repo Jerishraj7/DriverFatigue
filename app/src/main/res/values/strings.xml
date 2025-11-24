@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Driver Fatigue Detection</string>
+
+    <string name="setup_title">Driver Fatigue Detection</string>
+    <string name="setup_subtitle">Add an emergency contact to notify if you fall asleep while driving.</string>
+    <string name="setup_hint_phone">Emergency contact (phone)</string>
+    <string name="setup_btn_save">Save Number</string>
+    <string name="setup_btn_start">Start Monitoring</string>
+    <string name="setup_footer">You can change this later in the menu.</string>
+</resources>

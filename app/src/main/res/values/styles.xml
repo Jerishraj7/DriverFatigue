@@ -1,0 +1,7 @@
+<resources>
+    <!-- Example extra style used by activity_setup.xml -->
+    <style name="RoundedCard">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+</resources>

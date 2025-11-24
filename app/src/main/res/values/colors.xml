@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purpleStart">#6C63FF</color>
+    <color name="purpleEnd">#2E236D</color>
+    <color name="surfaceDark">#1B1529</color>
+    <color name="onSurface">#FFFFFF</color>
+    <color name="onSurfaceMuted">#BDB8D0</color>
+    <color name="accentCyan">#1DE9B6</color>
+</resources>

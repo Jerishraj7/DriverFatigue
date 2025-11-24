@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+    <!-- Outer purple circle -->
+    <path
+        android:fillColor="#6C63FF"
+        android:pathData="M64,8A56,56 0,1 1,8,64A56,56 0,0 1,64,8z" />
+
+    <!-- Eye shape -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M18,64c8,-16 28,-32 46,-32s38,16 46,32c-8,16 -28,32 -46,32S26,80 18,64z" />
+
+    <!-- Pupil -->
+    <path
+        android:fillColor="#2E236D"
+        android:pathData="M64,48a16,16 0,1,1 -16,16a16,16 0,0,1 16,-16z" />
+
+    <!-- Wave under eye -->
+    <path
+        android:fillColor="#1DE9B6"
+        android:pathData="M36,86c8,6 16,10 28,10s20,-4 28,-10"
+        android:strokeColor="#1DE9B6"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillAlpha="0.0" />
+</vector>

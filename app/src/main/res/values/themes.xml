@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App theme (single source of truth) -->
+    <style name="Theme.DriverFatigueDetection" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/purpleStart</item>
+        <item name="colorPrimaryContainer">@color/purpleEnd</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="android:statusBarColor">@color/purpleStart</item>
+    </style>
+</resources>
