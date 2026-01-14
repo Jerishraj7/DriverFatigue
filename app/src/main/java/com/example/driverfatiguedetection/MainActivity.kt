@@ -10,6 +10,7 @@ import android.telephony.SmsManager
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -22,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.LocationServices
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -37,20 +39,23 @@ class MainActivity : ComponentActivity() {
     private lateinit var btnAwake: Button
     private var countdownText: TextView? = null // optional if present in layout
 
+    // Dataset evaluation button
+    private lateinit var btnRunDatasetEval: Button
+
     // ---- Detection thresholds (tuned to reduce false alarms) ----
     private val EAR_THRESHOLD = 0.15
     private val EAR_HOLD_MS = 1200L
     private val MAR_THRESHOLD = 0.70
     private val MAR_HOLD_MS = 1500L
 
-    // When EAR/MAR look normal for this long, stop alarm & cancel SMS
+    // EAR/MAR look normal for this long, stop alarm & cancel SMS
     private val RECOVER_HOLD_MS = 800L
     private var recoveredCandidateStart = 0L
 
     private var eyeBelowSince = 0L
     private var mouthAboveSince = 0L
 
-    // ---- Auto-SMS timing & countdown ----
+    //  Auto-SMS timing & countdown ----
     private val COUNTDOWN_TOTAL_MS = 8_000L
     private val SMS_COOLDOWN_MS = 60_000L
     @Volatile private var isDrowsy = false
@@ -80,8 +85,13 @@ class MainActivity : ComponentActivity() {
         btnPickContact = findViewById(R.id.btnPickContact)
         txtContact = findViewById(R.id.txtContact)
         btnAwake = findViewById(R.id.btnAwake)
-        // will be null if you didn't add it to the XML (that's fine)
-        countdownText = findViewById<TextView?>(resources.getIdentifier("countdownText", "id", packageName))
+
+        //  find the eval button (id exists in XML)
+        btnRunDatasetEval = findViewById(R.id.btnRunDatasetEval)
+
+        countdownText = findViewById<TextView?>(
+            resources.getIdentifier("countdownText", "id", packageName)
+        )
 
         try {
             landmarker = FaceLandmarkerHelper(this)
@@ -106,6 +116,11 @@ class MainActivity : ComponentActivity() {
         btnAwake.setOnClickListener { onUserAwake() }
 
         Prefs.getEmergencyNumber(this)?.let { txtContact.text = "Emergency: $it" }
+
+        //Hook DatasetEvaluator to one button
+        btnRunDatasetEval.setOnClickListener {
+            runDatasetEvaluationFirst5()
+        }
 
         requestNeededPermissions()
     }
@@ -193,6 +208,67 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // NEW: Run dataset evaluation (first 50 images per folder)
+    private fun runDatasetEvaluationFirst5() {
+        if (landmarker == null) {
+            Toast.makeText(this, "Landmarker not ready", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        updateStatus("Running dataset eval… (As per folder)")
+
+        lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                val evaluator = DatasetEvaluator(this@MainActivity)
+
+                val (eyeCsv, yawnCsv) = evaluator.runAll(
+
+                    // ----- Eye predictor: Open vs Closed -----
+                    predictEyeLabelAndEar = { bitmap ->
+                        val lm = landmarker?.detect(bitmap)
+                        if (lm.isNullOrEmpty()) {
+                            Triple("no_face", null, false)
+                        } else {
+                            val pts = lm.map { DrowsinessMetrics.P(it.x(), it.y()) }
+                            val (ear, _) = DrowsinessMetrics.compute(pts)
+                            val pred = if (ear < EAR_THRESHOLD) "Closed" else "Open"
+                            Triple(pred, ear, true)
+                        }
+                    },
+
+                    // ----- Yawn predictor: yawn vs no_yawn -----
+                    predictYawnLabelAndMar = { bitmap ->
+                        val lm = landmarker?.detect(bitmap)
+                        if (lm.isNullOrEmpty()) {
+                            Triple("no_face", null, false)
+                        } else {
+                            val pts = lm.map { DrowsinessMetrics.P(it.x(), it.y()) }
+                            val (_, mar) = DrowsinessMetrics.compute(pts)
+                            val pred = if (mar > MAR_THRESHOLD) "yawn" else "no_yawn"
+                            Triple(pred, mar, true)
+                        }
+                    }
+                )
+
+                // Back to UI thread for Toast/status
+                launch(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Saved CSV:\n${eyeCsv.absolutePath}\n${yawnCsv.absolutePath}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    updateStatus("Evaluation done. CSV saved in app files.")
+                }
+
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    updateStatus("Eval error: ${e.message}")
+                    Toast.makeText(this@MainActivity, "Eval error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     // ---- Alarm helpers ----
     private fun startAlarm() {
         if (alarmPlayer == null) {
@@ -209,7 +285,7 @@ class MainActivity : ComponentActivity() {
         alarmPlayer = null
     }
 
-    // ---- Episode & countdown / auto-SMS flow ----
+    // ---- countdown ----
     private fun onDrowsyDetected() {
         if (!isDrowsy) {
             isDrowsy = true
@@ -244,7 +320,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startCountdownAndAutoSms() {
-        // cancel any older job
         countdownJob?.cancel()
         countdownJob = lifecycleScope.launch {
             val startStamp = drowsyEpisodeStart
@@ -279,7 +354,6 @@ class MainActivity : ComponentActivity() {
         val secs = kotlin.math.ceil(remainingMs / 1000.0).toInt().coerceAtLeast(0)
         countdownText?.visibility = View.VISIBLE
         countdownText?.text = "Sending alert in $secs s…"
-        // If you don't have a countdownText view, show it in the status line too:
         if (countdownText == null) {
             statusText.text = "Status: Drowsy • sending in $secs s…"
         }
@@ -288,8 +362,6 @@ class MainActivity : ComponentActivity() {
     private fun clearCountdownUI() {
         countdownText?.visibility = View.GONE
         countdownText?.text = ""
-        // If no dedicated view, revert status text (do not overwrite if you want last status)
-        // (We leave statusText as-is, because onLandmarks will update it next frame.)
     }
 
     private fun sendEmergencySmsWithLocation() {

@@ -23,7 +23,7 @@
         android:fillColor="#1DE9B6"
         android:pathData="M36,86c8,6 16,10 28,10s20,-4 28,-10"
         android:strokeColor="#1DE9B6"
-        android:strokeWidth="4"
+        android:strokeWidth="7"
         android:strokeLineCap="round"
         android:fillAlpha="0.0" />
 </vector>

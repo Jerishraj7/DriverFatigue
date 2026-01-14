@@ -17,7 +17,7 @@ class SetupActivity : AppCompatActivity() {
         val btnSave = findViewById<MaterialButton>(R.id.btnSave)
         val btnStart = findViewById<MaterialButton>(R.id.btnStart)
 
-        // preload saved number if any
+        // preload saved number
         Prefs.getEmergencyNumber(this)?.let { input.setText(it) }
 
         btnSave.setOnClickListener {

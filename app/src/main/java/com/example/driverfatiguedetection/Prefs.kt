@@ -2,6 +2,8 @@ package com.example.driverfatiguedetection
 
 import android.content.Context
 
+
+//singleton it used only one instance
 object Prefs {
     private const val FILE = "fatigue_prefs"
     private const val KEY_EMERGENCY = "emergency_number"

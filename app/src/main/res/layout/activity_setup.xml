@@ -33,7 +33,7 @@
                 android:src="@drawable/ic_driver_logo"
                 android:contentDescription="@string/app_name"
                 android:layout_gravity="center"
-                android:alpha="0.95" />
+                android:alpha="1.0" />
 
             <TextView
                 android:id="@+id/title"
